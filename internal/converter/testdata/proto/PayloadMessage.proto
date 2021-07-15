@@ -11,7 +11,14 @@ message PayloadMessage {
         ARRAY_OF_MESSAGE = 5;
     }
 
+
+    //jsons: pattern: http(s)?://.*
+    //jsons: maxLength: 1024
+    //jsons: minLength: 7
+    //Payload name
+    //and more explanation
     string name       = 1;
+
     string timestamp  = 2;
     int32 id          = 3;
     float rating      = 4;

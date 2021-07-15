@@ -4,7 +4,11 @@ const PayloadMessage = `{
     "$schema": "http://json-schema.org/draft-04/schema#",
     "properties": {
         "name": {
-            "type": "string"
+            "maxLength": 1024,
+            "minLength": 7,
+            "pattern": "http(s)?://.*",
+            "type": "string",
+            "description": "Payload name\n\nand more explanation"
         },
         "timestamp": {
             "type": "string"

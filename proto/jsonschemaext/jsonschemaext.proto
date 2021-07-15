@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/chrusty/jsonschemaext";
+
+package jsonschemaext;
+
+message JsonSchemaFieldOptions {
+  optional string pattern = 1;
+}
+
+extend google.protobuf.FieldOptions {
+  optional JsonSchemaFieldOptions options = 2000;
+}

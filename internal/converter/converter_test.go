@@ -285,6 +285,7 @@ func mustReadProtoFiles(t *testing.T, includePath string, filenames ...string) *
 	args = append(args, "--include_source_info")
 	args = append(args, "--include_imports")
 	args = append(args, "--proto_path="+includePath)
+	args = append(args, "--proto_path=../../proto")
 	args = append(args, filenames...)
 	cmd := exec.Command(protocBinary, args...)
 	stdoutBuf := bytes.Buffer{}

@@ -3,6 +3,7 @@ package converter
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/alecthomas/jsonschema"
@@ -75,7 +76,10 @@ func (c *Converter) convertField(curPkg *ProtoPackage, desc *descriptor.FieldDes
 
 	// Generate a description from src comments (if available)
 	if src := c.sourceInfo.GetField(desc); src != nil {
-		jsonSchemaType.Description = formatDescription(src)
+		description := formatDescription(src)
+		// Set the field options
+		setFieldOptions(description, jsonSchemaType)
+		jsonSchemaType.Description = filterDescription(description)
 	}
 
 	// Switch the types, and pick a JSONSchema equivalent:
@@ -465,7 +469,7 @@ func (c *Converter) recursiveConvertMessageType(curPkg *ProtoPackage, msg *descr
 
 	// Generate a description from src comments (if available)
 	if src := c.sourceInfo.GetMessage(msg); src != nil {
-		jsonSchemaType.Description = formatDescription(src)
+		jsonSchemaType.Description = filterDescription(formatDescription(src))
 	}
 
 	// Optionally allow NULL values:
@@ -540,9 +544,52 @@ func formatDescription(sl *descriptor.SourceCodeInfo_Location) string {
 	return strings.Join(lines, "\n\n")
 }
 
+func filterDescription(desc string) string {
+	var lines []string
+	if desc == "" {
+		return desc
+	}
+	for _, str := range strings.Split(desc, "\n") {
+		if !strings.HasPrefix(str, "jsons:") {
+			lines = append(lines, str)
+		}
+	}
+	return strings.Join(lines, "\n\n")
+}
+
+func setFieldOptions(desc string, jsonSchemaType *jsonschema.Type) {
+	if desc != "" {
+		for _, str := range strings.Split(desc, "\n") {
+			if strings.HasPrefix(str, "jsons:") {
+				parts := strings.Split(str, ":")
+				if len(parts) >= 3 {
+					propName := strings.ToLower(strings.TrimSpace(parts[1]))
+					propVal := strings.ToLower(strings.TrimSpace(strings.Join(parts[2:], ":")))
+					setJsonSchemaProps(propName, propVal, jsonSchemaType)
+				}
+			}
+		}
+	}
+}
+
+func setJsonSchemaProps(propName string, propVal string, jsonSchemaType *jsonschema.Type) {
+	switch propName {
+	case "pattern":
+		jsonSchemaType.Pattern = propVal
+	case "maxlength":
+		if maxLength, err := strconv.ParseInt(propVal, 10, 64); err == nil {
+			jsonSchemaType.MaxLength = int(maxLength)
+		}
+	case "minlength":
+		if maxLength, err := strconv.ParseInt(propVal, 10, 64); err == nil {
+			jsonSchemaType.MinLength = int(maxLength)
+		}
+	}
+}
+
 func dedupe(inputStrings []string) []string {
 	appended := make(map[string]bool)
-	outputStrings := []string{}
+	var outputStrings []string
 
 	for _, inputString := range inputStrings {
 		if !appended[inputString] {
@@ -552,3 +599,15 @@ func dedupe(inputStrings []string) []string {
 	}
 	return outputStrings
 }
+
+/*func setFieldOptions(desc *descriptor.FieldDescriptorProto, jsonSchemaType *jsonschema.Type) {
+	opts := desc.GetOptions()
+	if opts != nil {
+		if optionsInterface, _ := proto.GetExtension(opts, jsonschemaext.E_Options); optionsInterface != nil {
+			fieldOptions := optionsInterface.(*jsonschemaext.JsonSchemaFieldOptions)
+			fmt.Println("OPTS:", fieldOptions)
+			fieldPattern := *fieldOptions.Pattern
+			jsonSchemaType.Pattern = fieldPattern
+		}
+	}
+}*/
